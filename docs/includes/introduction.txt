@@ -70,6 +70,7 @@ and the `Wikipedia article about AMQP`_.
 .. _`librabbitmq`: http://pypi.python.org/pypi/librabbitmq
 .. _`Pyro`: http://pythonhosting.org/Pyro
 .. _`SoftLayer MQ`: http://www.softlayer.com/services/additional/message-queue
+.. _`NSQ`: http://nsq.io/
 
 .. _transport-comparison:
 
@@ -86,6 +87,8 @@ Transport Comparison
 | *redis*       | Virtual  | Yes        | Yes        | Yes (PUB/SUB) | Yes          | No                    |
 +---------------+----------+------------+------------+---------------+--------------+-----------------------+
 | *mongodb*     | Virtual  | Yes        | Yes        | Yes           | Yes          | Yes                   |
++---------------+----------+------------+------------+---------------+--------------+-----------------------+
+| *NSQ*         | Virtual  | Yes        | Yes [#f1]_ | Yes [#f2]_    | No           | No                    |
 +---------------+----------+------------+------------+---------------+--------------+-----------------------+
 | *SQS*         | Virtual  | Yes        | Yes [#f1]_ | Yes [#f2]_    | No           | No                    |
 +---------------+----------+------------+------------+---------------+--------------+-----------------------+

@@ -1,54 +1,73 @@
 """`nsq`_ transport.
 
-.. _`nsq`: http://pypi.python.org/pynsq/
+.. _`nsq`: https://pypi.python.org/pypi/pynsq/
 """
 from __future__ import absolute_import, unicode_literals
 
+from kombu.transport import base, virtual
+from kombu.messaging import Exchange
+
 try:
     import nsq
-except ImportError:
-    nsq = None
+except ImportError:  # pragma: no cover
+    nsq = None       # noqa
 
-from kombu.transport import virtual
-
-DEFAULT_PORT = 80
-DEFAULT_ADMIN_PORT = 4150
 DEFAULT_ADMIN_PORT_SSL = 4151
+DEFAULT_PORT = 80
+DEFAULT_PORT_SSL = 443
 
 
-class Message(nsq.Message, virtual.Message):
-    def ack(self, multiple=False):
-        super().ack(multiple)
+class Message(nsq.Message, base.Message):
+
+    def __init__(self, id, body, timestamp, attempts):
+        super(self, base.Message).__init__(body=body)
+
+    def requeue(self):
+        return super().requeue()
+
+    def enable_async(self):
+        super().enable_async()
+
+    def finish(self):
+        super().finish()
 
 
 class Channel(virtual.Channel):
-
+    prefix = 'nsq'
     Message = Message
 
-    def basic_qos(self, prefetch_size=0, prefetch_count=0, apply_global=False):
-        super().basic_qos(prefetch_size, prefetch_count, apply_global)
+    def prepare_message(self, body, priority=None, content_type=None, content_encoding=None, headers=None,
+                        properties=None):
+        return super().prepare_message(body, priority, content_type, content_encoding, headers, properties)
+
+    def queue_delete(self, queue, if_unused=False, if_empty=False, **kwargs):
+        super().queue_delete(queue, if_unused, if_empty, **kwargs)
+
+    def Consumer(self, *args, **kwargs):
+        return super(Channel, self).Consumer(*args, **kwargs)
+
+    def __init__(self):
+        nsq.AsyncConn()
+
+    @property
+    def qos(self):
+        return super().qos()
 
 
 class Transport(virtual.Transport):
+    Channel = Channel
 
-    # list of topics
-    queues = {}
+    default_port = DEFAULT_PORT
+    driver_type = 'nsq'
+    driver_name = 'nsq'
 
-    def __init__(self, client, **kwargs):
+    def __init__(self, *args, **kwargs):
         if nsq is None:
-            raise
-        client = nsq.Reader()
-
-    def get_heartbeat_interval(self, connection):
-        return super().get_heartbeat_interval(connection)
-
-    def establish_connection(self):
-        nsq.Writer(name='bullshit')
-
-    def close_channel(self, connection):
-        return super().close_channel(connection)
+            raise ImportError('Missing pynsq library')
 
     def driver_version(self):
         return nsq.__version__
 
-
+    def close_channel(self, channel):
+        nsq.AsyncConn.
+        super().close_channel(channel)

@@ -2,9 +2,9 @@
  NSQ Transport - ``kombu.transport.NSQ``
 ===========================================
 
-.. currentmodule:: kombu.transport.NSQ
+.. currentmodule:: kombu.transport.nsq
 
-.. automodule:: kombu.transport.NSQ
+.. automodule:: kombu.transport.nsq
 
     .. contents::
         :local:

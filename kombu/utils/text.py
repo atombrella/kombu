@@ -1,14 +1,13 @@
 """Text Utilities."""
 # flake8: noqa
 
-
 from difflib import SequenceMatcher
+from typing import Iterator, Sequence, Tuple
 
 from kombu import version_info_t
 
 
-def escape_regex(p, white=''):
-    # type: (str, str) -> str
+def escape_regex(p: str, white: str = '') -> str:
     """Escape string for use within a regular expression."""
     # what's up with re.escape? that code must be neglected or something
     return ''.join(c if c.isalnum() or c in white
@@ -16,8 +15,7 @@ def escape_regex(p, white=''):
                    for c in p)
 
 
-def fmatch_iter(needle, haystack, min_ratio=0.6):
-    # type: (str, Sequence[str], float) -> Iterator[Tuple[float, str]]
+def fmatch_iter(needle: str, haystack: Sequence[str], min_ratio: float = 0.6) -> Iterator[Tuple[float, str]]:
     """Fuzzy match: iteratively.
 
     Yields:
@@ -29,8 +27,7 @@ def fmatch_iter(needle, haystack, min_ratio=0.6):
             yield ratio, key
 
 
-def fmatch_best(needle, haystack, min_ratio=0.6):
-    # type: (str, Sequence[str], float) -> str
+def fmatch_best(needle: str, haystack: Sequence[str], min_ratio: float = 0.6) -> str:
     """Fuzzy match - Find best match (scalar)."""
     try:
         return sorted(
@@ -40,8 +37,7 @@ def fmatch_best(needle, haystack, min_ratio=0.6):
         pass
 
 
-def version_string_as_tuple(s):
-    # type: (str) -> version_info_t
+def version_string_as_tuple(s: str) -> version_info_t:
     """Convert version string to version info tuple."""
     v = _unpack_version(*s.split('.'))
     # X.Y.3a1 -> (X, Y, 3, 'a1')
@@ -53,13 +49,13 @@ def version_string_as_tuple(s):
     return v
 
 
-def _unpack_version(major, minor=0, micro=0, releaselevel='', serial=''):
-    # type: (int, int, int, str, str) -> version_info_t
+def _unpack_version(
+    major: int, minor: int = 0, micro: int = 0, releaselevel: str = '', serial: str = ''
+) -> version_info_t:
     return version_info_t(int(major), int(minor), micro, releaselevel, serial)
 
 
-def _splitmicro(micro, releaselevel='', serial=''):
-    # type: (int, str, str) -> Tuple[int, str, str]
+def _splitmicro(micro: int, releaselevel: str = '', serial: str = '') -> Tuple[int, str, str]:
     for index, char in enumerate(micro):
         if not char.isdigit():
             break

@@ -5,6 +5,8 @@
 import errno
 import socket
 
+from typing import Callable, Mapping, Tuple, Any, Dict
+
 from amqp.exceptions import RecoverableConnectionError
 
 from kombu.exceptions import ChannelError, ConnectionError
@@ -15,17 +17,16 @@ from kombu.utils.time import maybe_s_to_ms
 
 __all__ = ('Message', 'StdChannel', 'Management', 'Transport')
 
-RABBITMQ_QUEUE_ARGUMENTS = {
+RABBITMQ_QUEUE_ARGUMENTS: Mapping[str, Tuple[str, Callable]] = {
     'expires': ('x-expires', maybe_s_to_ms),
     'message_ttl': ('x-message-ttl', maybe_s_to_ms),
     'max_length': ('x-max-length', int),
     'max_length_bytes': ('x-max-length-bytes', int),
     'max_priority': ('x-max-priority', int),
-}  # type: Mapping[str, Tuple[str, Callable]]
+}
 
 
-def to_rabbitmq_queue_arguments(arguments, **options):
-    # type: (Mapping, **Any) -> Dict
+def to_rabbitmq_queue_arguments(arguments: Mapping, **options: Any) -> Dict:
     """Convert queue arguments to RabbitMQ queue arguments.
 
     This is the implementation for Channel.prepare_queue_arguments
@@ -51,15 +52,14 @@ def to_rabbitmq_queue_arguments(arguments, **options):
     Returns:
         Dict: RabbitMQ compatible queue arguments.
     """
-    prepared = dictfilter(dict(
+    prepared = dictfilter({
         _to_rabbitmq_queue_argument(key, value)
         for key, value in options.items()
-    ))
-    return dict(arguments, **prepared) if prepared else arguments
+    })
+    return {**arguments, **prepared} if prepared else arguments
 
 
-def _to_rabbitmq_queue_argument(key, value):
-    # type: (str, Any) -> Tuple[str, Any]
+def _to_rabbitmq_queue_argument(key: str, value: Any) -> Tuple[str, Any]:
     opt, typ = RABBITMQ_QUEUE_ARGUMENTS[key]
     return opt, typ(value) if value is not None else value
 

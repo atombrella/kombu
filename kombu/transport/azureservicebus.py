@@ -85,8 +85,8 @@ class SendReceive:
     def __init__(self,
                  receiver: Optional[ServiceBusReceiver] = None,
                  sender: Optional[ServiceBusSender] = None):
-        self.receiver = receiver  # type: ServiceBusReceiver
-        self.sender = sender  # type: ServiceBusSender
+        self.receiver: ServiceBusReceiver = receiver
+        self.sender: ServiceBusSender = sender
 
     def close(self) -> None:
         if self.receiver:
@@ -111,10 +111,10 @@ class Channel(virtual.Channel):
     # Max time to backoff (is the default from service bus repo)
     default_retry_backoff_max = 120
     domain_format = 'kombu%(vhost)s'
-    _queue_service = None  # type: ServiceBusClient
-    _queue_mgmt_service = None  # type: ServiceBusAdministrationClient
-    _queue_cache = {}  # type: Dict[str, SendReceive]
-    _noack_queues = set()  # type: Set[str]
+    _queue_service: ServiceBusClient = None
+    _queue_mgmt_service: ServiceBusAdministrationClient = None
+    _queue_cache: Dict[str, SendReceive] = {}
+    _noack_queues: Set[str] = set()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -193,8 +193,7 @@ class Channel(virtual.Channel):
             queue_obj = self._add_queue_to_cache(cache_key, receiver=receiver)
         return queue_obj
 
-    def entity_name(
-            self, name: str, table: Optional[Dict[int, int]] = None) -> str:
+    def entity_name(self, name: str, table: Optional[Dict[int, int]] = None) -> str:
         """Format AMQP queue name into a valid ServiceBus queue name."""
         return str(safe_str(name)).translate(table or CHARS_REPLACE_TABLE)
 
@@ -205,7 +204,7 @@ class Channel(virtual.Channel):
         # super()._restore(message)
         pass
 
-    def _new_queue(self, queue: str, **kwargs) -> SendReceive:
+    def _new_queue(self, queue: str, **kwargs: Any) -> SendReceive:
         """Ensure a queue exists in ServiceBus."""
         queue = self.entity_name(self.queue_name_prefix + queue)
 
@@ -223,7 +222,7 @@ class Channel(virtual.Channel):
                 pass
             return self._add_queue_to_cache(queue)
 
-    def _delete(self, queue: str, *args, **kwargs) -> None:
+    def _delete(self, queue: str, *args, **kwargs: Any) -> None:
         """Delete queue by name."""
         queue = self.entity_name(self.queue_name_prefix + queue)
 
@@ -232,7 +231,7 @@ class Channel(virtual.Channel):
         if send_receive_obj:
             send_receive_obj.close()
 
-    def _put(self, queue: str, message, **kwargs) -> None:
+    def _put(self, queue: str, message, **kwargs: Any) -> None:
         """Put message onto queue."""
         queue = self.entity_name(self.queue_name_prefix + queue)
         msg = ServiceBusMessage(dumps(message))

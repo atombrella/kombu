@@ -34,3 +34,4 @@ coverage.xml
 venv/
 env
 .eggs
+.mypy_cache

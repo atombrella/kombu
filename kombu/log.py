@@ -5,7 +5,7 @@ import numbers
 import os
 import sys
 from logging.handlers import WatchedFileHandler
-from typing import Union, Generator, Optional, Any
+from typing import Union, Generator, Optional, Any, IO
 
 from .utils.encoding import safe_repr, safe_str
 from .utils.functional import maybe_evaluate
@@ -123,7 +123,7 @@ class Log(LogMixin):
         return self._logger_name
 
 
-def setup_logging(loglevel=None, logfile=None):
+def setup_logging(loglevel: Optional[str] = None, logfile: Optional[IO] = None):
     """Setup logging."""
     logger = logging.getLogger()
     loglevel = get_loglevel(loglevel or 'ERROR')

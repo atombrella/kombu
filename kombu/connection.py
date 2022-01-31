@@ -6,6 +6,9 @@ from collections import OrderedDict
 from contextlib import contextmanager
 from itertools import count, cycle
 from operator import itemgetter
+from typing import Optional, Any, Union, Callable, Iterator, Generator
+
+from .transport.base import StdChannel, Transport
 
 try:
     from ssl import CERT_NONE
@@ -147,11 +150,11 @@ class Connection:
 
     hostname = userid = password = ssl = login_method = None
 
-    def __init__(self, hostname='localhost', userid=None,
-                 password=None, virtual_host=None, port=None, insist=False,
-                 ssl=False, transport=None, connect_timeout=5,
+    def __init__(self, hostname: str = 'localhost', userid: Optional[str] = None,
+                 password: Optional[str] = None, virtual_host: Optional[] = None, port: Optional[int] = None,
+                 insist: bool = False, ssl: bool = False, transport=None, connect_timeout: int = 5,
                  transport_options=None, login_method=None, uri_prefix=None,
-                 heartbeat=0, failover_strategy='round-robin',
+                 heartbeat: int = 0, failover_strategy: str = 'round-robin',
                  alternates=None, **kwargs):
         alt = [] if alternates is None else alternates
         # have to spell the args out, just to get nice docstrings :(
@@ -215,7 +218,7 @@ class Connection:
 
         self.declared_entities = set()
 
-    def switch(self, conn_str):
+    def switch(self, conn_str: str) -> None:
         """Switch connection parameters to use a new URL or hostname.
 
         Note:
@@ -232,14 +235,14 @@ class Connection:
         )
         self._init_params(**dict(self._initial_params, **conn_params))
 
-    def maybe_switch_next(self):
+    def maybe_switch_next(self) -> None:
         """Switch to next URL given by the current failover strategy."""
         if self.cycle:
             self.switch(next(self.cycle))
 
-    def _init_params(self, hostname, userid, password, virtual_host, port,
-                     insist, ssl, transport, connect_timeout,
-                     login_method, heartbeat):
+    def _init_params(self, hostname: str, userid: str, password: str, virtual_host, port: int,
+                     insist, ssl: bool, transport: Transport, connect_timeout: int,
+                     login_method, heartbeat: int) -> None:
         transport = transport or 'amqp'
         if transport == 'amqp' and supports_librabbitmq():
             transport = 'librabbitmq'
@@ -261,22 +264,23 @@ class Connection:
         self.transport_cls = transport
         self.heartbeat = heartbeat and float(heartbeat)
 
-    def register_with_event_loop(self, loop):
+    def register_with_event_loop(self, loop: str) -> None:
         self.transport.register_with_event_loop(self.connection, loop)
 
-    def _debug(self, msg, *args, **kwargs):
+    def _debug(self, msg: str, *args: Any, **kwargs: Any) -> None:
         if self._logger:  # pragma: no cover
             fmt = '[Kombu connection:{id:#x}] {msg}'
             logger.debug(fmt.format(id=id(self), msg=str(msg)),
                          *args, **kwargs)
 
-    def connect(self):
+    def connect(self) -> None:
         """Establish connection to server immediately."""
         return self._ensure_connection(
             max_retries=1, reraise_as_library_errors=False
         )
 
-    def channel(self):
+    # TODO replace Any with something better
+    def channel(self) -> Union[Any, StdChannel]:
         """Create and return a new channel."""
         self._debug('create channel')
         chan = self.transport.create_channel(self.connection)
@@ -286,7 +290,7 @@ class Connection:
                               '[Kombu channel:{0.channel_id}] ')
         return chan
 
-    def heartbeat_check(self, rate=2):
+    def heartbeat_check(self, rate: int = 2):
         """Check heartbeats.
 
         Allow the transport to perform any periodic tasks
@@ -335,19 +339,19 @@ class Connection:
                 pass
             self._connection = None
 
-    def _close(self):
+    def _close(self) -> None:
         """Really close connection, even if part of a connection pool."""
         self._do_close_self()
         self._do_close_transport()
         self._debug('closed')
         self._closed = True
 
-    def _do_close_transport(self):
+    def _do_close_transport(self) -> None:
         if self._transport:
             self._transport.client = None
             self._transport = None
 
-    def collect(self, socket_timeout=None):
+    def collect(self, socket_timeout: Optional[int] = None) -> None:
         # amqp requires communication to close, we don't need that just
         # to clear out references, Transport._collect can also be implemented
         # by other transports that want fast after fork
@@ -369,12 +373,12 @@ class Connection:
         self.declared_entities.clear()
         self._connection = None
 
-    def release(self):
+    def release(self) -> None:
         """Close the connection (if open)."""
         self._close()
     close = release
 
-    def ensure_connection(self, *args, **kwargs):
+    def ensure_connection(self, *args: Any, **kwargs: Any) -> "Connection":
         """Public interface of _ensure_connection for retro-compatibility.
 
         Returns kombu.Connection instance.
@@ -383,11 +387,11 @@ class Connection:
         return self
 
     def _ensure_connection(
-        self, errback=None, max_retries=None,
-        interval_start=2, interval_step=2, interval_max=30,
+        self, errback: = None, max_retries: Optional[int] = None,
+        interval_start: int = 2, interval_step=2, interval_max=30,
         callback=None, reraise_as_library_errors=True,
         timeout=None
-    ):
+    ) -> None:
         """Ensure we have a connection to the server.
 
         If not retry establishing the connection with the settings
@@ -417,7 +421,7 @@ class Connection:
         if self.connected:
             return self._connection
 
-        def on_error(exc, intervals, retries, interval=0):
+        def on_error(exc: Exception, intervals: Iterator, retries: int, interval: int = 0) -> int:
             round = self.completes_cycle(retries)
             if round:
                 interval = next(intervals)
@@ -453,10 +457,10 @@ class Connection:
             raise ChannelError(str(exc)) from exc
 
     @contextmanager
-    def _dummy_context(self):
+    def _dummy_context(self) -> Generator[None]:
         yield
 
-    def completes_cycle(self, retries):
+    def completes_cycle(self, retries: int)-> bool:
         """Return true if the cycle is complete after number of `retries`."""
         return not (retries + 1) % len(self.alt) if self.alt else True
 
@@ -602,7 +606,7 @@ class Connection:
         revive = Revival(self)
         return self.ensure(revive, revive, **ensure_options)
 
-    def create_transport(self):
+    def create_transport(self) -> Transport:
         return self.get_transport_cls()(client=self)
 
     def get_transport_cls(self):
@@ -660,7 +664,7 @@ class Connection:
         """Get connection info."""
         return OrderedDict(self._info())
 
-    def __eqhash__(self):
+    def __eqhash__(self) -> HashedSeq:
         return HashedSeq(self.transport_cls, self.hostname, self.userid,
                          self.password, self.virtual_host, self.port,
                          repr(self.transport_options))
@@ -696,7 +700,7 @@ class Connection:
             sanitize=not include_password, mask=mask,
         )
 
-    def Pool(self, limit=None, **kwargs):
+    def Pool(self, limit: Optional[int] = None, **kwargs) -> "Connection":
         """Pool of connections.
 
         See Also:
@@ -851,14 +855,14 @@ class Connection:
         return conn_opts
 
     @property
-    def connected(self):
+    def connected(self) -> bool:
         """Return true if the connection has been established."""
         return (not self._closed and
                 self._connection is not None and
                 self.transport.verify_connection(self._connection))
 
     @property
-    def connection(self):
+    def connection(self) -> Optional["Connection"]:
         """The underlying connection object.
 
         Warning:
@@ -880,7 +884,7 @@ class Connection:
         return self._connection
 
     @property
-    def default_channel(self):
+    def default_channel(self) -> StdChannel:
         """Default channel.
 
         Created upon access and closed when the connection is closed.
@@ -900,12 +904,12 @@ class Connection:
         return self._default_channel
 
     @property
-    def host(self):
+    def host(self) -> str:
         """The host as a host name/port pair separated by colon."""
         return ':'.join([self.hostname, str(self.port)])
 
     @property
-    def transport(self):
+    def transport(self) -> :
         if self._transport is None:
             self._transport = self.create_transport()
         return self._transport
@@ -993,7 +997,7 @@ class ConnectionPool(Resource):
         except AttributeError:
             pass
 
-    def close_resource(self, resource):
+    def close_resource(self, resource: Connection) -> None:
         resource._close()
 
     def collect_resource(self, resource, socket_timeout=0.1):
@@ -1023,27 +1027,27 @@ class ChannelPool(Resource):
 
     LimitExceeded = exceptions.ChannelLimitExceeded
 
-    def __init__(self, connection, limit=None, **kwargs):
+    def __init__(self, connection: Connection, limit: Optional = None, **kwargs):
         self.connection = connection
         super().__init__(limit=limit)
 
-    def new(self):
+    def new(self) -> lazy:
         return lazy(self.connection.channel)
 
-    def setup(self):
+    def setup(self) -> None:
         channel = self.new()
         if self.limit:
             q = self._resource.queue
             while len(q) < self.limit:
                 self._resource.put_nowait(lazy(channel))
 
-    def prepare(self, channel):
+    def prepare(self, channel: Union[Callable, StdChannel]) -> StdChannel:
         if callable(channel):
             channel = channel()
         return channel
 
 
-def maybe_channel(channel):
+def maybe_channel(channel: Union[Connection, StdChannel]) -> StdChannel:
     """Get channel from object.
 
     Return the default channel if argument is a connection instance,
@@ -1054,5 +1058,5 @@ def maybe_channel(channel):
     return channel
 
 
-def is_connection(obj):
+def is_connection(obj) -> bool:
     return isinstance(obj, Connection)

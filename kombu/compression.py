@@ -1,6 +1,7 @@
 """Compression utilities."""
 
 import zlib
+from typing import Callable, Any, Optional, Sequence, List, AnyStr
 
 from kombu.utils.encoding import ensure_bytes
 
@@ -12,7 +13,7 @@ __all__ = ('register', 'encoders', 'get_encoder',
            'get_decoder', 'compress', 'decompress')
 
 
-def register(encoder, decoder, content_type, aliases=None):
+def register(encoder: Callable, decoder: Callable, content_type: Any, aliases: Optional[Sequence[str]] = None):
     """Register new compression method.
 
     Arguments:
@@ -30,7 +31,7 @@ def register(encoder, decoder, content_type, aliases=None):
         _aliases.update((alias, content_type) for alias in aliases)
 
 
-def encoders():
+def encoders() -> List:
     """Return a list of available compression methods."""
     return list(_encoders)
 
@@ -41,12 +42,12 @@ def get_encoder(t):
     return _encoders[t], t
 
 
-def get_decoder(t):
+def get_decoder(t: AnyStr):
     """Get decoder by alias name."""
     return _decoders[_aliases.get(t, t)]
 
 
-def compress(body, content_type):
+def compress(body: AnyStr, content_type: str) -> Any:
     """Compress text.
 
     Arguments:
@@ -57,7 +58,7 @@ def compress(body, content_type):
     return encoder(ensure_bytes(body)), content_type
 
 
-def decompress(body, content_type):
+def decompress(body: AnyStr, content_type: str):
     """Decompress compressed text.
 
     Arguments:

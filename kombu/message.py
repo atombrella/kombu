@@ -1,6 +1,7 @@
 """Message class."""
 
 import sys
+from logging import Logger
 
 from .compression import decompress
 from .exceptions import MessageStateError, reraise
@@ -96,7 +97,7 @@ class Message:
                 raise
             callback(self, exc)
 
-    def ack(self, multiple=False):
+    def ack(self, multiple: bool = False) -> None:
         """Acknowledge this message as being processed.
 
         This will remove the message from the queue.
@@ -123,7 +124,7 @@ class Message:
         self.channel.basic_ack(self.delivery_tag, multiple=multiple)
         self._state = 'ACK'
 
-    def ack_log_error(self, logger, errors, multiple=False):
+    def ack_log_error(self, logger: Logger, errors: Exception, multiple: bool = False) -> None:
         try:
             self.ack(multiple=multiple)
         except BrokenPipeError as exc:
@@ -134,14 +135,14 @@ class Message:
             logger.critical("Couldn't ack %r, reason:%r",
                             self.delivery_tag, exc, exc_info=True)
 
-    def reject_log_error(self, logger, errors, requeue=False):
+    def reject_log_error(self, logger: Logger, errors: Exception, requeue: bool = False) -> None:
         try:
             self.reject(requeue=requeue)
         except errors as exc:
             logger.critical("Couldn't reject %r, reason: %r",
                             self.delivery_tag, exc, exc_info=True)
 
-    def reject(self, requeue=False):
+    def reject(self, requeue: bool = False) -> None:
         """Reject this message.
 
         The message will be discarded by the server.
@@ -160,7 +161,7 @@ class Message:
         self.channel.basic_reject(self.delivery_tag, requeue=requeue)
         self._state = 'REJECTED'
 
-    def requeue(self):
+    def requeue(self) -> None:
         """Reject this message and put it back on the queue.
 
         Warning:
@@ -181,7 +182,7 @@ class Message:
         self.channel.basic_reject(self.delivery_tag, requeue=True)
         self._state = 'REQUEUED'
 
-    def decode(self):
+    def decode(self) -> :
         """Deserialize the message body.
 
         Returning the original python structure sent by the publisher.
@@ -194,7 +195,7 @@ class Message:
             self._decoded_cache = self._decode()
         return self._decoded_cache
 
-    def _decode(self):
+    def _decode(self) -> :
         return loads(self.body, self.content_type,
                      self.content_encoding, accept=self.accept)
 

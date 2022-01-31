@@ -1,7 +1,9 @@
 """Sending and receiving messages."""
 
 from itertools import count
+from typing import Optional, Any
 
+from . import Message
 from .common import maybe_declare
 from .compression import compress
 from .connection import is_connection, maybe_channel
@@ -55,9 +57,9 @@ class Producer:
     #: default_channel).
     __connection__ = None
 
-    def __init__(self, channel, exchange=None, routing_key=None,
-                 serializer=None, auto_declare=None, compression=None,
-                 on_return=None):
+    def __init__(self, channel, exchange: Optional[str] = None, routing_key: Optional[str] = None,
+                 serializer: Optional[str] = None, auto_declare: Optional[bool] = None,
+                 compression: Optional[str] = None, on_return: Optional[str] = None):
         self._channel = channel
         self.exchange = exchange
         self.routing_key = routing_key or self.routing_key
@@ -73,7 +75,7 @@ class Producer:
         if self._channel:
             self.revive(self._channel)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<Producer: {self._channel}>'
 
     def __reduce__(self):
@@ -83,7 +85,7 @@ class Producer:
         return (None, self.exchange, self.routing_key, self.serializer,
                 self.auto_declare, self.compression)
 
-    def declare(self):
+    def declare(self) -> None:
         """Declare the exchange.
 
         Note:
@@ -93,12 +95,12 @@ class Producer:
         if self.exchange.name:
             self.exchange.declare()
 
-    def maybe_declare(self, entity, retry=False, **retry_policy):
+    def maybe_declare(self, entity, retry=False, **retry_policy) -> Optional:
         """Declare exchange if not already declared during this session."""
         if entity:
             return maybe_declare(entity, self.channel, retry, **retry_policy)
 
-    def _delivery_details(self, exchange, delivery_mode=None,
+    def _delivery_details(self, exchange: Exchange, delivery_mode: Optional["DeliveryMode"] = None,
                           maybe_delivery_mode=maybe_delivery_mode,
                           Exchange=Exchange):
         if isinstance(exchange, Exchange):
@@ -531,7 +533,7 @@ class Consumer:
         """
         self.channel.flow(active)
 
-    def qos(self, prefetch_size=0, prefetch_count=0, apply_global=False):
+    def qos(self, prefetch_size: int = 0, prefetch_count: int = 0, apply_global: bool = False) -> None:
         """Specify quality of service.
 
         The client can request that messages should be sent in
@@ -559,7 +561,7 @@ class Consumer:
                                       prefetch_count,
                                       apply_global)
 
-    def recover(self, requeue=False):
+    def recover(self, requeue: bool = False) -> None:
         """Redeliver unacknowledged messages.
 
         Asks the broker to redeliver all unacknowledged messages
@@ -573,7 +575,7 @@ class Consumer:
         """
         return self.channel.basic_recover(requeue=requeue)
 
-    def receive(self, body, message):
+    def receive(self, body: Any, message: Message) -> None:
         """Method called when a message is received.
 
         This dispatches to the registered :attr:`callbacks`.
@@ -592,7 +594,7 @@ class Consumer:
         [callback(body, message) for callback in callbacks]
 
     def _basic_consume(self, queue, consumer_tag=None,
-                       no_ack=no_ack, nowait=True):
+                       no_ack=no_ack, nowait: bool = True):
         tag = self._active_tags.get(queue.name)
         if tag is None:
             tag = self._add_tag(queue, consumer_tag)
@@ -606,7 +608,7 @@ class Consumer:
         self._active_tags[queue.name] = tag
         return tag
 
-    def _receive_callback(self, message):
+    def _receive_callback(self, message: Message) -> Optional[]:
         accept = self.accept
         on_m, channel, decoded = self.on_message, self.channel, None
         try:
@@ -625,7 +627,7 @@ class Consumer:
         else:
             return on_m(message) if on_m else self.receive(decoded, message)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<{type(self).__name__}: {self.queues}>'
 
     @property

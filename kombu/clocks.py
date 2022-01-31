@@ -3,6 +3,7 @@
 from itertools import islice
 from operator import itemgetter
 from threading import Lock
+from typing import Any
 
 __all__ = ('LamportClock', 'timetuple')
 
@@ -99,11 +100,11 @@ class LamportClock:
     #: The clocks current value.
     value = 0
 
-    def __init__(self, initial_value=0, Lock=Lock):
+    def __init__(self, initial_value=0, Lock=Lock) -> None:
         self.value = initial_value
         self.mutex = Lock()
 
-    def adjust(self, other):
+    def adjust(self, other) -> Any:
         with self.mutex:
             value = self.value = max(self.value, other) + 1
             return value
@@ -140,8 +141,8 @@ class LamportClock:
         # clock values unique, return first item
         return h[0]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return str(self.value)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f'<LamportClock: {self.value}>'

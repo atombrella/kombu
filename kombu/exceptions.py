@@ -1,6 +1,7 @@
 """Exceptions."""
-
+from inspect import Traceback
 from socket import timeout as TimeoutError
+from typing import Optional, Any
 
 from amqp import ChannelError, ConnectionError, ResourceError
 
@@ -15,7 +16,7 @@ __all__ = (
 )
 
 
-def reraise(tp, value, tb=None):
+def reraise(tp: Any, value: Exception, tb: Traceback = None) -> Any:
     """Reraise exception."""
     if value.__traceback__ is not tb:
         raise value.with_traceback(tb)
@@ -84,11 +85,11 @@ class InconsistencyError(ConnectionError):
 class HttpError(Exception):
     """HTTP Client Error."""
 
-    def __init__(self, code, message=None, response=None):
+    def __init__(self, code: int, message: Optional[str] = None, response: Optional[str] = None) -> None:
         self.code = code
         self.message = message
         self.response = response
         super().__init__(code, message, response)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return 'HTTP {0.code}: {0.message}'.format(self)

@@ -5,6 +5,7 @@ import numbers
 import os
 import sys
 from logging.handlers import WatchedFileHandler
+from typing import Union, Generator, Optional, Any
 
 from .utils.encoding import safe_repr, safe_str
 from .utils.functional import maybe_evaluate
@@ -19,7 +20,7 @@ LOG_LEVELS.setdefault(logging.FATAL, 'FATAL')
 DISABLE_TRACEBACKS = os.environ.get('DISABLE_TRACEBACKS')
 
 
-def get_logger(logger):
+def get_logger(logger: Union[str, logging.Logger]):
     """Get logger by name."""
     if isinstance(logger, str):
         logger = logging.getLogger(logger)
@@ -28,20 +29,20 @@ def get_logger(logger):
     return logger
 
 
-def get_loglevel(level):
+def get_loglevel(level: Union[str, int]) -> int:
     """Get loglevel by name."""
     if isinstance(level, str):
         return LOG_LEVELS[level]
     return level
 
 
-def naive_format_parts(fmt):
+def naive_format_parts(fmt: str) -> Generator[Optional[str]]:
     parts = fmt.split('%')
     for i, e in enumerate(parts[1:]):
         yield None if not e or not parts[i - 1] else e[0]
 
 
-def safeify_format(fmt, args, filters=None):
+def safeify_format(fmt: str, args: Any, filters=None):
     filters = {'s': safe_str, 'r': safe_repr} if not filters else filters
     for index, type in enumerate(naive_format_parts(fmt)):
         filt = filters.get(type)
